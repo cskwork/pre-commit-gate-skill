@@ -25,6 +25,7 @@ Clone once and link it into each harness's skills directory:
 git clone https://github.com/cskwork/pre-commit-gate-skill ~/src/pre-commit-gate-skill
 ln -s ~/src/pre-commit-gate-skill ~/.claude/skills/pre-commit-gate
 ln -s ~/src/pre-commit-gate-skill ~/.codex/skills/pre-commit-gate
+mkdir -p ~/.kiro/skills && ln -s ~/src/pre-commit-gate-skill ~/.kiro/skills/pre-commit-gate  # a custom Kiro agent also lists the skill in its resources
 ```
 
 If your harnesses share one skills directory (for example `~/.agents/skills` linked from each), one link covers all of them.
@@ -33,7 +34,7 @@ Then add one line to `AGENTS.md`, the one instructions file every harness reads:
 
 - Codex and Kiro read `AGENTS.md`.
 - Claude Code v2.1.277+ reads `AGENTS.md` directly when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` sits in the working directory or above it (`~/.claude/CLAUDE.md` does not count). Keep only `AGENTS.md` in projects. User-level instructions are the exception: Claude Code reads `~/.claude/CLAUDE.md`, so keep that one, as a link to your shared file if you have one.
-- While some folders in the tree still have a `CLAUDE.md`, set Claude Code to read both, in `~/.claude/settings.json`: `"pluginConfigs": {"cc-plugin-agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}`.
+- While some folders in the tree still have a `CLAUDE.md`, set Claude Code to read both, in `~/.claude/settings.json`: `"pluginConfigs": {"cc-plugin-agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}` (before v2.1.285 the key is `agents-md@builtin`).
 - On older Claude Code, a `CLAUDE.md` holding only `@AGENTS.md` imports it. Prefer that import to a symlink: Claude Code's Edit and Write refuse to write through a symlink, and `core.symlinks=false` checkouts turn it into a text file.
 
 ```md
