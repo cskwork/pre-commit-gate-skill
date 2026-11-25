@@ -12,9 +12,11 @@ Code edited after it was verified ships unverified. The gate therefore orders th
 | 1 | Simplify (optional) | yes | the diff is simplified with behaviour preserved, or the skip reason is recorded |
 | 2 | Verify | no | the changed behaviour was observed running, with a receipt for each check |
 | 3 | Review | no | an independent review of the full diff has no unresolved correctness finding |
-| 4 | Commit and push | no | the commit holds exactly the reviewed diff and the remote shows it |
+| 4 | Commit and push | no | the commit holds exactly the reviewed staged change and the remote shows it |
 
-Scope: code changes. A commit that touches only docs or tests runs gate 4 alone, plus the repo's doc validation script if one exists.
+Stage the change by path before gate 2: gates 2 and 3 judge the staged change, and every fix is re-staged before the gates run again. Stage every file the change needs, including new files the build or the run reads; an untracked helper passes locally and is missing from the commit. While the gates run, keep the working tree equal to the index (`git diff --quiet --ignore-submodules=none` passes, and no tracked file is marked `assume-unchanged` or `skip-worktree`), so builds and reviewers see exactly what will be committed. When gate 2 starts, note the _snapshot_: `git rev-parse -q --verify HEAD` and `git write-tree`. A change to either restarts gate 2.
+
+Scope: code changes. A commit that touches only docs runs gate 4 alone, plus the repo's doc validation script if one exists.
 
 ## Verdicts
 
@@ -64,18 +66,25 @@ The reviewer is _independent_: it reads the diff without the author's reasoning.
 
 | Harness | Command |
 |---------|---------|
-| Claude Code | `/code-review medium`; use `high` for auth, permissions, deletion, data migration, or money. It reads `CLAUDE.md`, not `REVIEW.md`, so keep review rules in `CLAUDE.md` or a file it points to. |
-| Codex CLI | `codex review --uncommitted` for the working tree, `codex review --base <branch>` for a branch. |
+| Claude Code | `/code-review medium`; use `high` for auth, permissions, deletion, data migration, or money. It reads `CLAUDE.md`, not `REVIEW.md`; it reads `AGENTS.md` only when no `CLAUDE.md` exists in that folder or any parent. Keep review rules in `AGENTS.md` and link `CLAUDE.md` to it, so both harnesses read the same rules. |
+| Codex CLI | `codex review --uncommitted` for the working tree, `codex review --base <branch>` for a branch. `--base` shows the net change against the merge base, so a staged edit that reverts a branch commit disappears from it; on a branch with earlier commits, also review `git diff --cached` on its own. The scope flags take no prompt, so a later round restates round 1's full scope and the earlier findings as the prompt: `codex review "Review git diff <base>...HEAD plus the staged change. Earlier findings: …"`. |
 | Any other | A fresh subagent with no conversation history. Give it the diff command and the path to the repo's review rules only; ask for correctness findings, each with `file:line` and a concrete failure scenario. |
 
 Triage every finding: fix it (back to gate 2), or reject it with evidence from code, data, or a run. A finding left untriaged keeps the gate at FAIL.
 
+When gate 3 passes, and HEAD and `git write-tree` still equal the snapshot, record the snapshot values themselves as the receipt, at once, before any other edit or staging. A BLOCKED gate the user accepted records the same receipt, with the acceptance in the report.
+
+```sh
+echo "<snapshot HEAD, or none> <snapshot tree>" > "$(git rev-parse --git-path pre-commit-gate-receipt)"
+```
+
+The receipt names the base commit and the exact staged tree that verify and review judged. This skill's `hooks/pre-commit`, when installed, blocks a code commit whose HEAD or staged tree differs from it.
+
 ## Gate 4: Commit and push
 
-1. Stage the changed files by path. Compare `git diff --cached --stat` with the diff gate 3 reviewed; they match exactly.
-2. Commit with the repo's message conventions and hooks.
-3. Push when the user or the repo's instructions authorize it.
-4. Confirm the remote holds the commit: `git log -1 origin/<branch>` after a fetch, or `git ls-remote origin <branch>`.
+1. Commit the staged change with the repo's message conventions and hooks. Anything else to stage sends the work back to gate 2.
+2. Push when the user or the repo's instructions authorize it.
+3. Confirm the remote holds the commit: `git log -1 origin/<branch>` after a fetch, or `git ls-remote origin <branch>`.
 
 ## Report
 
