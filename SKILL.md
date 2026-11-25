@@ -28,7 +28,7 @@ A BLOCKED gate stays BLOCKED in the report; the commit waits until the user acce
 
 ## The loop
 
-Any edit made in gate 2 or gate 3 sends the work back to gate 2, then gate 3, on the new diff. Gate 1 does not re-run. Give each finding at most 3 fix attempts; after the third, stop and report what was tried.
+Any edit made in gate 2 or gate 3 sends the work back to gate 2, then gate 3, on the new diff. Give each pass the previous round's failures and findings so it builds on them. Gate 1 does not re-run. Give each finding at most 3 fix attempts; after the third, stop and report what was tried.
 
 ## Gate 1: Simplify
 
@@ -50,6 +50,13 @@ Use the repo's or the user's `verify` skill when one is installed. Otherwise, in
 4. Run tests only where the repo's instructions or the user ask for them, and report which ran.
 
 A passing compile is a gate 2 receipt for step 1 only; behaviour needs step 3.
+
+The author runs the checks; the checks stay _independent_ of the author:
+
+- Derive the scenarios from the request and its acceptance criteria, written before reading the new code.
+- Keep the checks (scenario files, verify adapter, gate rules) where the change cannot edit them. A diff that edits the check judging it needs the user's sign-off.
+- Include inputs the author did not pick: generated or property-based cases, a real data row, the boundaries the requirement names.
+- For auth, permissions, deletion, data migration, or money, hand the receipts and acceptance criteria to a separate grader in a fresh context to rule PASS or FAIL.
 
 ## Gate 3: Review
 
