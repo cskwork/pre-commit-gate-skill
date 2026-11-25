@@ -34,9 +34,9 @@ Any edit made in gate 2 or gate 3 sends the work back to gate 2, then gate 3, on
 
 ## Gate 1: Simplify
 
-Run it when the diff carries duplication, deep nesting, or names its author would flag. Record a skip when the diff is already plain or the repo's rules ask for the smallest correct fix.
+Run it only for a large change: a new module or feature, or a diff of roughly 300 changed lines or more. For anything smaller, record the skip: gate 3 still runs, and Claude Code's `/code-review` reports cleanups where its recipe covers them, so a separate pass would mostly repeat it.
 
-- Use the harness's own simplify or cleanup command or skill.
+- Use the harness's own simplify or cleanup command or skill (Claude Code `/simplify`: quality fixes only, applied to the tree; it does not hunt bugs).
 - Keep edits inside the changed lines and their direct callers.
 - Preserve every input, output, side effect, and error path.
 
@@ -66,7 +66,7 @@ The reviewer is _independent_: it reads the diff without the author's reasoning.
 
 | Harness | Command |
 |---------|---------|
-| Claude Code | `/code-review medium`; use `high` for auth, permissions, deletion, data migration, or money. It reads `CLAUDE.md`, not `REVIEW.md`; it reads `AGENTS.md` only when no `CLAUDE.md` exists in that folder or any parent. Keep review rules in `AGENTS.md` and link `CLAUDE.md` to it, so both harnesses read the same rules. |
+| Claude Code | `/code-review medium`; use `high` for auth, permissions, deletion, data migration, or money. It reads the loaded project instructions, not `REVIEW.md`, so keep review rules in `AGENTS.md`. |
 | Codex CLI | `codex review --uncommitted` for the working tree, `codex review --base <branch>` for a branch. `--base` shows the net change against the merge base, so a staged edit that reverts a branch commit disappears from it; on a branch with earlier commits, also review `git diff --cached` on its own. The scope flags take no prompt, so a later round restates round 1's full scope and the earlier findings as the prompt: `codex review "Review git diff <base>...HEAD plus the staged change. Earlier findings: …"`. |
 | Any other | A fresh subagent with no conversation history. Give it the diff command and the path to the repo's review rules only; ask for correctness findings, each with `file:line` and a concrete failure scenario. |
 
@@ -92,4 +92,4 @@ One row per gate: gate, verdict, receipt (command and result, finding counts, or
 
 ## Project overrides
 
-The repo's `AGENTS.md` or `CLAUDE.md` may set per-gate commands: test scope, review level, verify adapter, commit message rules. Those win over the defaults here. Keep project-specific commands, hosts, and accounts in the project, out of this skill.
+The repo's `AGENTS.md` may set per-gate commands: test scope, review level, verify adapter, commit message rules. Those win over the defaults here. Keep project-specific commands, hosts, and accounts in the project, out of this skill.

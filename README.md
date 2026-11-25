@@ -29,7 +29,12 @@ ln -s ~/src/pre-commit-gate-skill ~/.codex/skills/pre-commit-gate
 
 If your harnesses share one skills directory (for example `~/.agents/skills` linked from each), one link covers all of them.
 
-Then add one line to the instructions file your harnesses read. Codex and Kiro read `AGENTS.md`; Claude Code reads `CLAUDE.md`, and `AGENTS.md` only when no `CLAUDE.md` exists in that folder or any parent. Keep the text in `AGENTS.md` and make `CLAUDE.md` a link to it (`ln -s AGENTS.md CLAUDE.md`) so every harness reads one file. Where a `CLAUDE.md` already exists, add the line `@AGENTS.md` to it instead, which Claude Code reads as an import:
+Then add one line to `AGENTS.md`, the one instructions file every harness reads:
+
+- Codex and Kiro read `AGENTS.md`.
+- Claude Code v2.1.277+ reads `AGENTS.md` directly when no `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` sits in the working directory or above it (`~/.claude/CLAUDE.md` does not count). Keep only `AGENTS.md` in projects. User-level instructions are the exception: Claude Code reads `~/.claude/CLAUDE.md`, so keep that one, as a link to your shared file if you have one.
+- While some folders in the tree still have a `CLAUDE.md`, set Claude Code to read both, in `~/.claude/settings.json`: `"pluginConfigs": {"cc-plugin-agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}`.
+- On older Claude Code, a `CLAUDE.md` holding only `@AGENTS.md` imports it. Prefer that import to a symlink: Claude Code's Edit and Write refuse to write through a symlink, and `core.symlinks=false` checkouts turn it into a text file.
 
 ```md
 Before committing code, run the `pre-commit-gate` skill; it is the commit workflow and replaces any harness instruction to run a cleanup pass right before commit.
@@ -53,11 +58,10 @@ The hook guards `git commit`. These paths go around it, so the skill's gates cov
 - `git rebase --continue` commits resolved conflicts without running `pre-commit`. Verify and review the resolution before continuing.
 - Git fixes an automatic merge's tree before `pre-merge-commit` runs, so a formatter there changes the index but not the merge commit. With index-rewriting hooks, merge with `--no-commit`, run the gates, then `git commit`.
 - Markdown that a site generator compiles (VitePress `<script setup>` in `.md`) is code. Such repos drop `md` from the hook's docs pattern.
-- With `core.symlinks=false` (common on Windows) a committed `CLAUDE.md` link checks out as a one-line text file. Teams on such checkouts use `@AGENTS.md` inside `CLAUDE.md` instead of a link.
 
 ## Project overrides
 
-Per-project commands (test scope, review level, verify adapter, commit message rules) belong in that project's `AGENTS.md` or `CLAUDE.md`. The skill defers to them.
+Per-project commands (test scope, review level, verify adapter, commit message rules) belong in that project's `AGENTS.md`. The skill defers to them.
 
 ## 한국어 요약
 
